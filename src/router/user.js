@@ -1,17 +1,18 @@
 const { loginStart } = require("../controller/user");
 const { SuccessModel, ErrorModel } = require("../model/resModel");
+const { set } = require("../db/redis");
 
 const handleRouterUser = (req, res) => {
     // 登录
-    if (req.method === "GET" && req.path === "/api/user/login") {
-        // const { username, password } = req.body;
-        const { username, password } = req.query;
+    if (req.method === "POST" && req.path === "/api/user/login") {
+        const { username, password } = req.body;
         const result = loginStart(username, password);
         return result.then(loginData => {
             if (loginData.username) {
                 req.session.username = loginData.username;
                 req.session.realname = loginData.realname;
-                console.log(req.session);
+                // 同步到 redis
+                set(req.sessionId, req.session);  
                 return new SuccessModel();
             }
             return new ErrorModel("登录失败");
